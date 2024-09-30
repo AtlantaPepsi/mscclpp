@@ -22,6 +22,31 @@ extern "C" __host__ __device__ void __assert_fail(const char *__assertion, const
 #endif  // !defined(MSCCLPP_DEVICE_HIP)
 #endif  // NDEBUG
 
+static constexpr uint64_t clocks_factor = 2106;
+
+static void __device__
+sleep_clocks (uint64_t clocks)
+{
+  uint64_t start = clock64 ();
+  for (;;)
+    {
+      uint64_t now = clock64 ();
+      uint64_t elapsed = (now > start
+			  ? now - start
+			  : now + (0xffffffffffffffff - start));
+      if (elapsed >= clocks)
+	return;
+    }
+}
+
+extern "C" void __device__
+nsleep (int nsec)
+{
+  uint64_t clocks = clocks_factor * CLOCKS_PER_SEC * nsec / 1000000000;
+
+  sleep_clocks (clocks);
+}
+
 // If a spin is stuck, print a warning and keep spinning.
 #define POLL_MAYBE_JAILBREAK(__cond, __max_spin_cnt)                     \
   do {                                                                   \

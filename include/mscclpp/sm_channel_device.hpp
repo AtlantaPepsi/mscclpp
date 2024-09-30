@@ -31,6 +31,7 @@ template <typename T>
 MSCCLPP_DEVICE_INLINE void copy(T* dst, T* src, uint64_t numElems, uint32_t threadId, uint32_t numThreads) {
   T reg;
   for (size_t i = threadId; i < numElems; i += numThreads) {
+    nsleep(1000);
     // Load to register first.
     reg = src[i];
     // Then store to destination.

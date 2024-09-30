@@ -73,7 +73,7 @@ __constant__ DeviceHandle<mscclpp::SmChannel> gChannelOneToOneTestConstSmChans;
 void SmChannelOneToOneTest::packetPingPongTest(const std::string testName, PacketPingPongKernelWrapper kernelWrapper) {
   if (gEnv->rank >= numRanksToUse) return;
 
-  const int nElem = 4 * 1024 * 1024;
+  const int nElem = 64 * 1024 * 1024;
   const int defaultNTries = 1000;
 
   std::vector<mscclpp::SmChannel> smChannels;
@@ -91,37 +91,20 @@ void SmChannelOneToOneTest::packetPingPongTest(const std::string testName, Packe
   std::shared_ptr<int> ret = mscclpp::makeSharedCudaHost<int>(0);
 
   // The least nelem is 2 for packet ping pong
-  kernelWrapper(buff.get(), gEnv->rank, 2, ret.get(), defaultNTries);
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-  *ret = 0;
-
-  kernelWrapper(buff.get(), gEnv->rank, 1024, ret.get(), defaultNTries);
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-
-  EXPECT_EQ(*ret, 0);
-  *ret = 0;
-
-  kernelWrapper(buff.get(), gEnv->rank, 1024 * 1024, ret.get(), defaultNTries);
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-
-  EXPECT_EQ(*ret, 0);
-  *ret = 0;
-
-  kernelWrapper(buff.get(), gEnv->rank, 4 * 1024 * 1024, ret.get(), defaultNTries);
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-
-  EXPECT_EQ(*ret, 0);
-  *ret = 0;
-
-  int nTries = 1000000;
-  communicator->bootstrap()->barrier();
   mscclpp::Timer timer;
-  kernelWrapper(buff.get(), gEnv->rank, 1024, ret.get(), nTries);
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-  communicator->bootstrap()->barrier();
+  for (int i = 2; i <= 64 * 1024 * 1024; i *= 2) {
+    communicator->bootstrap()->barrier();
+    timer.set(0);
+    kernelWrapper(buff.get(), gEnv->rank, i, ret.get(), defaultNTries);
+    MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
+    communicator->bootstrap()->barrier();
 
-  if (gEnv->rank == 0) {
-    std::cout << testName << ": " << std::setprecision(4) << (float)timer.elapsed() / (float)(nTries) << " us/iter\n";
+    if (gEnv->rank == 0) {
+      std::cout << testName << ": size " << i << " , " << std::fixed << std::setprecision(4) << (float)timer.elapsed() / (float)(defaultNTries)  << " us/iter\n";
+    }
+
+    EXPECT_EQ(*ret, 0);
+    *ret = 0;
   }
 }
 
@@ -175,7 +158,7 @@ __global__ void kernelSmPutPingPong(int* buff, int rank, int nElem, int* ret) {
 TEST_F(SmChannelOneToOneTest, PutPingPong) {
   if (gEnv->rank >= numRanksToUse) return;
 
-  const int nElem = 4 * 1024 * 1024;
+  const int nElem = 64 * 1024 * 1024;
 
   std::vector<mscclpp::SmChannel> smChannels;
   std::shared_ptr<int> buff = mscclpp::allocExtSharedCuda<int>(nElem);
@@ -190,28 +173,21 @@ TEST_F(SmChannelOneToOneTest, PutPingPong) {
 
   std::shared_ptr<int> ret = mscclpp::makeSharedCudaHost<int>(0);
 
-  kernelSmPutPingPong<<<1, 1024>>>(buff.get(), gEnv->rank, 1, ret.get());
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
+  mscclpp::Timer timer;
+  for (int i = 1; i <= 64 * 1024 * 1024; i *= 2) {
+    communicator->bootstrap()->barrier();
+    timer.set(0);
+    kernelSmPutPingPong<<<1, 1024>>>(buff.get(), gEnv->rank, i, ret.get());
+    MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
+    communicator->bootstrap()->barrier();
 
-  EXPECT_EQ(*ret, 0);
-  *ret = 0;
+    if (gEnv->rank == 0) {
+      std::cout << "PutPingpong" << ": size " << i << " , " << std::fixed << std::setprecision(4) << (float)timer.elapsed() / (float)(1000) << " us/iter\n";
+    }
 
-  kernelSmPutPingPong<<<1, 1024>>>(buff.get(), gEnv->rank, 1024, ret.get());
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-
-  EXPECT_EQ(*ret, 0);
-  *ret = 0;
-
-  kernelSmPutPingPong<<<1, 1024>>>(buff.get(), gEnv->rank, 1024 * 1024, ret.get());
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-
-  EXPECT_EQ(*ret, 0);
-  *ret = 0;
-
-  kernelSmPutPingPong<<<1, 1024>>>(buff.get(), gEnv->rank, 4 * 1024 * 1024, ret.get());
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-
-  EXPECT_EQ(*ret, 0);
+    EXPECT_EQ(*ret, 0);
+    *ret = 0;
+  }
 }
 
 __global__ void kernelSmGetPingPong(int* buff, int rank, int nElem, int* ret) {
@@ -254,7 +230,7 @@ __global__ void kernelSmGetPingPong(int* buff, int rank, int nElem, int* ret) {
 TEST_F(SmChannelOneToOneTest, GetPingPong) {
   if (gEnv->rank >= numRanksToUse) return;
 
-  const int nElem = 4 * 1024 * 1024;
+  const int nElem = 64 * 1024 * 1024;
 
   std::vector<mscclpp::SmChannel> smChannels;
   std::shared_ptr<int> buff = mscclpp::allocExtSharedCuda<int>(nElem);
@@ -269,28 +245,21 @@ TEST_F(SmChannelOneToOneTest, GetPingPong) {
 
   std::shared_ptr<int> ret = mscclpp::makeSharedCudaHost<int>(0);
 
-  kernelSmGetPingPong<<<1, 1024>>>(buff.get(), gEnv->rank, 1, ret.get());
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
+  mscclpp::Timer timer;
+  for (int i = 1; i <= 64 * 1024 * 1024; i *= 2) {
+    communicator->bootstrap()->barrier();
+    timer.set(0);
+    kernelSmGetPingPong<<<1, 1024>>>(buff.get(), gEnv->rank, i, ret.get());
+    MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
+    communicator->bootstrap()->barrier();
 
-  EXPECT_EQ(*ret, 0);
-  *ret = 0;
+    if (gEnv->rank == 0) {
+      std::cout << "GetPingpong" << ": size " << i << " , " << std::fixed << std::setprecision(4) << (float)timer.elapsed() / (float)(1000) << " us/iter\n";
+    }
 
-  kernelSmGetPingPong<<<1, 1024>>>(buff.get(), gEnv->rank, 1024, ret.get());
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-
-  EXPECT_EQ(*ret, 0);
-  *ret = 0;
-
-  kernelSmGetPingPong<<<1, 1024>>>(buff.get(), gEnv->rank, 1024 * 1024, ret.get());
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-
-  EXPECT_EQ(*ret, 0);
-  *ret = 0;
-
-  kernelSmGetPingPong<<<1, 1024>>>(buff.get(), gEnv->rank, 4 * 1024 * 1024, ret.get());
-  MSCCLPP_CUDATHROW(cudaDeviceSynchronize());
-
-  EXPECT_EQ(*ret, 0);
+    EXPECT_EQ(*ret, 0);
+    *ret = 0;
+  }
 }
 
 __global__ void kernelSmLL8PacketPingPong(int* buff, int rank, int nElem, int* ret, int nTries) {
