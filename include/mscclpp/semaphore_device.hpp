@@ -41,13 +41,9 @@ struct SmDevice2DeviceSemaphoreDeviceHandle {
 #if defined(MSCCLPP_DEVICE_COMPILE)
   /// Poll if the remote device has signaled.
   /// @return true if the remote device has signaled.
-  MSCCLPP_DEVICE_INLINE uint64_t atomicLoadDelayed(uint64_t * inboundSemaphoreId, int memoryOrderAcquire) {
-    nsleep(1000);
-    return atomicLoad(inboundSemaphoreId, memoryOrderAcquire);
-  }
-
   MSCCLPP_DEVICE_INLINE bool poll() {
-    bool signaled = (atomicLoadDelayed(inboundSemaphoreId, memoryOrderAcquire) > (*expectedInboundSemaphoreId));
+    bool signaled = (atomicLoad(inboundSemaphoreId, memoryOrderAcquire) > (*expectedInboundSemaphoreId));
+    //nsleep(1000);
     if (signaled) (*expectedInboundSemaphoreId) += 1;
     return signaled;
   }
@@ -55,8 +51,9 @@ struct SmDevice2DeviceSemaphoreDeviceHandle {
   /// Wait for the remote device to signal.
   MSCCLPP_DEVICE_INLINE void wait(int64_t maxSpinCount = 100000000) {
     (*expectedInboundSemaphoreId) += 1;
-    POLL_MAYBE_JAILBREAK((atomicLoadDelayed(inboundSemaphoreId, memoryOrderAcquire) < (*expectedInboundSemaphoreId)),
+    POLL_MAYBE_JAILBREAK((atomicLoad(inboundSemaphoreId, memoryOrderAcquire) < (*expectedInboundSemaphoreId)),
                          maxSpinCount);
+    //nsleep(1000);
   }
 
   /// Signal the remote device.
@@ -68,7 +65,6 @@ struct SmDevice2DeviceSemaphoreDeviceHandle {
     // This fence ensures that preceding writes are visible on the peer GPU before the incremented
     // `outboundSemaphoreId` is visible.
     semaphoreIncrement();
-    nsleep(1000);
     atomicStore(remoteInboundSemaphoreId, semaphoreGetLocal(), memoryOrderSeqCst);
   }
 
@@ -81,7 +77,6 @@ struct SmDevice2DeviceSemaphoreDeviceHandle {
     // This fence ensures that preceding writes are visible on the peer GPU before the incremented
     // `outboundSemaphoreId` is visible.
     semaphoreIncrement();
-    nsleep(1000);
     atomicStore(remoteInboundSemaphoreId, semaphoreGetLocal(), memoryOrderRelaxed);
   }
 

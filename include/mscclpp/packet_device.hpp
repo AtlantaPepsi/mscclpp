@@ -49,9 +49,7 @@ union alignas(16) LL16Packet {
 #else  // !defined(MSCCLPP_DEVICE_CUDA)
     uint4 reg = make_uint4(val1, flag, val2, flag);
     ulonglong2* p = reinterpret_cast<ulonglong2*>(&reg);
-    nsleep(1000);
     atomicStore(&(raw_.x), p->x, memoryOrderRelaxed);
-    nsleep(1000);
     atomicStore(&(raw_.y), p->y, memoryOrderRelaxed);
 #endif
   }
@@ -79,9 +77,7 @@ union alignas(16) LL16Packet {
     return (flag1 != flag) || (flag2 != flag);
 #else  // !defined(MSCCLPP_DEVICE_CUDA)
     ulonglong2 reg;
-    nsleep(1000);
     reg.x = atomicLoad(&(raw_.x), memoryOrderRelaxed);
-    nsleep(1000);
     reg.y = atomicLoad(&(raw_.y), memoryOrderRelaxed);
     uint4* ptr = reinterpret_cast<uint4*>(&reg);
     data.x = ptr->x;
@@ -97,6 +93,7 @@ union alignas(16) LL16Packet {
   MSCCLPP_DEVICE_INLINE uint2 read(uint32_t flag, int64_t maxSpinCount = 100000000) const {
     uint2 data;
     POLL_MAYBE_JAILBREAK(readOnce(flag, data), maxSpinCount);
+    //nsleep(1000);
     return data;
   }
 
@@ -129,7 +126,6 @@ union alignas(8) LL8Packet {
 #else  // !defined(MSCCLPP_DEVICE_CUDA)
     uint2 reg = make_uint2(val, flag);
     uint64_t* p = reinterpret_cast<uint64_t*>(&reg);
-    nsleep(1000);
     atomicStore(&(raw_), *p, memoryOrderRelaxed);
 #endif
   }
@@ -141,7 +137,6 @@ union alignas(8) LL8Packet {
     return (f != flag);
 #else  // !defined(MSCCLPP_DEVICE_CUDA)
     uint64_t reg;
-    nsleep(1000);
     reg = atomicLoad(&(raw_), memoryOrderRelaxed);
     uint2* ptr = reinterpret_cast<uint2*>(&reg);
     data = ptr->x;
@@ -152,6 +147,7 @@ union alignas(8) LL8Packet {
   MSCCLPP_DEVICE_INLINE uint32_t read(uint32_t flag, int64_t maxSpinCount = 1000000) const {
     uint32_t data;
     POLL_MAYBE_JAILBREAK(readOnce(flag, data), maxSpinCount);
+    //nsleep(1000);
     return data;
   }
 
