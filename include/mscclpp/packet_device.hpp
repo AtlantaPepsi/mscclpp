@@ -93,7 +93,6 @@ union alignas(16) LL16Packet {
   MSCCLPP_DEVICE_INLINE uint2 read(uint32_t flag, int64_t maxSpinCount = 100000000) const {
     uint2 data;
     POLL_MAYBE_JAILBREAK(readOnce(flag, data), maxSpinCount);
-    //nsleep(1000);
     return data;
   }
 
@@ -147,7 +146,6 @@ union alignas(8) LL8Packet {
   MSCCLPP_DEVICE_INLINE uint32_t read(uint32_t flag, int64_t maxSpinCount = 1000000) const {
     uint32_t data;
     POLL_MAYBE_JAILBREAK(readOnce(flag, data), maxSpinCount);
-    //nsleep(1000);
     return data;
   }
 
@@ -201,6 +199,7 @@ MSCCLPP_DEVICE_INLINE void getLL16Packets(const void* targetPtr, uint64_t target
   const LL16Packet* targetBase = (const LL16Packet*)((const char*)targetPtr + targetOffset);
   uint2* originBase = (uint2*)((char*)originPtr + originOffset);
   size_t nElem = originBytes / sizeof(uint2);
+  nsleep(1000);
   for (size_t i = threadId; i < nElem; i += numThreads) {
     const LL16Packet* pkt = &targetBase[i];
     originBase[i] = pkt->read(flag);
@@ -249,6 +248,7 @@ MSCCLPP_DEVICE_INLINE void getLL8Packets(const void* targetPtr, uint64_t targetO
   const LL8Packet* targetBase = (const LL8Packet*)((const char*)targetPtr + targetOffset);
   uint32_t* originBase = (uint32_t*)((char*)originPtr + originOffset);
   size_t nElem = originBytes / sizeof(uint32_t);
+  nsleep(1000);
   for (size_t i = threadId; i < nElem; i += numThreads) {
     const LL8Packet* pkt = &targetBase[i];
     originBase[i] = pkt->read(flag);

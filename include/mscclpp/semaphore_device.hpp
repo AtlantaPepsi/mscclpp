@@ -43,7 +43,7 @@ struct SmDevice2DeviceSemaphoreDeviceHandle {
   /// @return true if the remote device has signaled.
   MSCCLPP_DEVICE_INLINE bool poll() {
     bool signaled = (atomicLoad(inboundSemaphoreId, memoryOrderAcquire) > (*expectedInboundSemaphoreId));
-    //nsleep(1000);
+    nsleep(1000);
     if (signaled) (*expectedInboundSemaphoreId) += 1;
     return signaled;
   }
@@ -53,7 +53,7 @@ struct SmDevice2DeviceSemaphoreDeviceHandle {
     (*expectedInboundSemaphoreId) += 1;
     POLL_MAYBE_JAILBREAK((atomicLoad(inboundSemaphoreId, memoryOrderAcquire) < (*expectedInboundSemaphoreId)),
                          maxSpinCount);
-    //nsleep(1000);
+    nsleep(1000);
   }
 
   /// Signal the remote device.

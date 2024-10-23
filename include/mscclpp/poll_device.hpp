@@ -27,8 +27,10 @@ static constexpr uint64_t clocks_factor = 2106;
 static void __device__
 sleep_clocks (uint64_t clocks)
 {
-  uint64_t start = clock64 ();
-  for (;;)
+  if (threadIdx.x % 64 == 0)
+  {
+    uint64_t start = clock64 ();
+    for (;;)
     {
       uint64_t now = clock64 ();
       uint64_t elapsed = (now > start
@@ -37,6 +39,7 @@ sleep_clocks (uint64_t clocks)
       if (elapsed >= clocks)
 	return;
     }
+  }
 }
 
 extern "C" void __device__
