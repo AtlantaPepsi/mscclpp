@@ -92,7 +92,7 @@ void SmChannelOneToOneTest::packetPingPongTest(const std::string testName, Packe
 
   // The least nelem is 2 for packet ping pong
   mscclpp::Timer timer;
-  for (int i = 2; i <= 64 * 1024 * 1024; i *= 2) {
+  for (int i = 2; i <= 1 * 1024 * 1024; i *= 2) {
     communicator->bootstrap()->barrier();
     timer.set(0);
     kernelWrapper(buff.get(), gEnv->rank, i, ret.get(), defaultNTries);

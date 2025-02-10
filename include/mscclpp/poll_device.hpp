@@ -43,11 +43,29 @@ sleep_clocks (uint64_t clocks)
 }
 
 extern "C" void __device__
-nsleep (int nsec)
+clcksleep (int nsec)
 {
   uint64_t clocks = clocks_factor * CLOCKS_PER_SEC * nsec / 1000000000;
 
   sleep_clocks (clocks);
+}
+
+extern "C" void __device__
+wclcksleep (uint64_t cycles)
+{
+  if (threadIdx.x % 64 == 0)
+  {
+    uint64_t start = wall_clock64 ();
+    for (;;)
+    {
+      uint64_t now = wall_clock64 ();
+      uint64_t elapsed = (now >= start
+                          ? now - start
+                          : now + (0xffffffffffffffffULL - start));
+      if (elapsed >= cycles)
+        return ;
+    }
+  }
 }
 
 // If a spin is stuck, print a warning and keep spinning.

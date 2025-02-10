@@ -199,7 +199,8 @@ MSCCLPP_DEVICE_INLINE void getLL16Packets(const void* targetPtr, uint64_t target
   const LL16Packet* targetBase = (const LL16Packet*)((const char*)targetPtr + targetOffset);
   uint2* originBase = (uint2*)((char*)originPtr + originOffset);
   size_t nElem = originBytes / sizeof(uint2);
-  nsleep(1000);
+  wclcksleep(30000); // in cycle
+  //clcksleep(4000); // in ns
   for (size_t i = threadId; i < nElem; i += numThreads) {
     const LL16Packet* pkt = &targetBase[i];
     originBase[i] = pkt->read(flag);
@@ -248,7 +249,8 @@ MSCCLPP_DEVICE_INLINE void getLL8Packets(const void* targetPtr, uint64_t targetO
   const LL8Packet* targetBase = (const LL8Packet*)((const char*)targetPtr + targetOffset);
   uint32_t* originBase = (uint32_t*)((char*)originPtr + originOffset);
   size_t nElem = originBytes / sizeof(uint32_t);
-  nsleep(1000);
+  wclcksleep(40000);
+  //clcksleep(4000);
   for (size_t i = threadId; i < nElem; i += numThreads) {
     const LL8Packet* pkt = &targetBase[i];
     originBase[i] = pkt->read(flag);
